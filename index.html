@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII / Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2230;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --text3: #484f58;
+      --teal: #1D9E75;
+      --teal-light: #5DCAA5;
+      --teal-dim: rgba(29,158,117,0.15);
+      --amber: #EF9F27;
+      --red: #F09595;
+      --mono: 'DM Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 24px;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--bg);
+    }
+    .traffic-lights { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-g { background: var(--teal-light); }
+    .dot-y { background: var(--amber); }
+    .dot-r { background: var(--red); }
+    .app-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text2);
+    }
+    .app-title strong { color: var(--text); font-weight: 500; }
+    header nav {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+    header nav a {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    header nav a:hover { color: var(--text2); }
+
+    /* ── Main workspace ── */
+    main {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-right: 0.5px solid var(--border);
+      background: var(--bg2);
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      padding: 16px 18px;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .section-label {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 0.5px dashed var(--border2);
+      border-radius: var(--radius);
+      padding: 18px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .drop-zone:hover {
+      background: var(--teal-dim);
+      border-color: var(--teal);
+    }
+    .drop-zone.has-image {
+      border-style: solid;
+      border-color: var(--teal);
+      background: var(--teal-dim);
+    }
+    .drop-zone svg {
+      display: block;
+      margin: 0 auto 8px;
+      color: var(--text3);
+    }
+    .drop-zone.has-image svg { color: var(--teal-light); }
+    .drop-zone p {
+      font-size: 11px;
+      color: var(--text3);
+      line-height: 1.6;
+    }
+    .drop-zone.has-image p { color: var(--text2); }
+    .drop-zone .fname {
+      font-size: 10px;
+      color: var(--teal-light);
+      margin-top: 6px;
+      word-break: break-all;
+    }
+    #file-input { display: none; }
+
+    /* Source mode tabs */
+    .source-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .src-tab {
+      flex: 1;
+      padding: 5px 0;
+      font-size: 10px;
+      font-family: var(--mono);
+      letter-spacing: 0.07em;
+      text-align: center;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: transparent;
+      color: var(--text3);
+      transition: all 0.12s;
+    }
+    .src-tab:hover { color: var(--text2); }
+    .src-tab.active { background: var(--teal-dim); color: var(--teal-light); border-color: var(--teal); }
+
+    /* Prompt panel */
+    .prompt-panel { display: none; flex-direction: column; gap: 10px; }
+    .prompt-panel.visible { display: flex; }
+
+    .prompt-textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 10px 11px;
+      resize: vertical;
+      min-height: 90px;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color 0.15s;
+    }
+    .prompt-textarea::placeholder { color: var(--text3); }
+    .prompt-textarea:focus { border-color: var(--teal); }
+
+    .prompt-options {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .prompt-opt-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .prompt-opt-label { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+    select.prompt-select {
+      flex: 1;
+      background: var(--bg3);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 4px 7px;
+      cursor: pointer;
+      outline: none;
+    }
+    select.prompt-select:focus { border-color: var(--teal); }
+
+    .btn-generate {
+      width: 100%;
+      padding: 9px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--teal);
+      background: var(--teal-dim);
+      color: var(--teal-light);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .btn-generate:hover { background: rgba(29,158,117,0.28); }
+    .btn-generate:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-generate.generating { animation: pulse 1s ease-in-out infinite; }
+
+    /* Streaming cursor blink in output */
+    .stream-cursor {
+      display: inline-block;
+      width: 7px;
+      height: 1.1em;
+      background: var(--teal-light);
+      vertical-align: text-bottom;
+      animation: blink 0.7s step-end infinite;
+      border-radius: 1px;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* Controls */
+    .ctrl-group { display: flex; flex-direction: column; gap: 14px; }
+    .ctrl-row { display: flex; flex-direction: column; gap: 5px; }
+    .ctrl-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ctrl-name { font-size: 11px; color: var(--text2); }
+    .ctrl-val {
+      font-size: 11px;
+      color: var(--teal-light);
+      font-weight: 500;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    /* Range slider */
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--border2);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--teal-light);
+      cursor: pointer;
+      transition: transform 0.1s;
+      box-shadow: 0 0 0 2px rgba(93,202,165,0.25);
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+    input[type=range]::-moz-range-thumb {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--teal-light);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Gradient-track sliders (color controls) */
+    input[type=range].gradient-track {
+      height: 6px;
+      border-radius: 3px;
+    }
+    input[type=range].gradient-track::-webkit-slider-thumb {
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.15);
+    }
+    input[type=range].gradient-track::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+
+    /* Color controls panel */
+    .color-panel {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+    }
+    .color-panel.visible { display: flex; }
+
+    /* Glow mode buttons */
+    .glow-row { display: flex; gap: 4px; }
+    .glow-tog {
+      flex: 1;
+      padding: 6px 0;
+      font-size: 10px;
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+      text-align: center;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: transparent;
+      color: var(--text3);
+      transition: all 0.15s;
+      line-height: 1.3;
+    }
+    .glow-tog:hover { color: var(--text2); }
+    .glow-tog.active {
+      background: var(--teal-dim);
+      color: var(--teal-light);
+      border-color: var(--teal);
+    }
+    .glow-tog .glow-label { display: block; font-size: 9px; color: inherit; opacity: 0.7; margin-top: 1px; }
+
+    /* Select */
+    select {
+      width: 100%;
+      background: var(--bg3);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 6px 10px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:hover { border-color: var(--teal); }
+    select:focus { border-color: var(--teal-light); }
+
+    /* Toggle buttons */
+    .toggle-row { display: flex; gap: 4px; }
+    .tog {
+      flex: 1;
+      padding: 5px 0;
+      font-size: 10px;
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+      text-align: center;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: transparent;
+      color: var(--text3);
+      transition: all 0.12s;
+    }
+    .tog:hover { color: var(--text2); border-color: var(--border2); }
+    .tog.active {
+      background: var(--teal-dim);
+      color: var(--teal-light);
+      border-color: var(--teal);
+    }
+
+    /* Render button */
+    .btn-render {
+      width: calc(100% - 36px);
+      margin: 16px 18px;
+      padding: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--teal);
+      background: var(--teal-dim);
+      color: var(--teal-light);
+      transition: all 0.15s;
+    }
+    .btn-render:hover {
+      background: rgba(29,158,117,0.28);
+    }
+    .btn-render:active { transform: scale(0.98); }
+    .btn-render.rendering {
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ── Output panel ── */
+    .output-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .output-toolbar {
+      display: flex;
+      align-items: center;
+      padding: 10px 18px;
+      border-bottom: 0.5px solid var(--border);
+      gap: 12px;
+    }
+    .output-label {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text3);
+      flex: 1;
+    }
+    .output-dims {
+      font-size: 10px;
+      color: var(--text3);
+    }
+    .output-dims span { color: var(--text2); }
+
+    .icon-btn {
+      background: transparent;
+      border: 0.5px solid transparent;
+      cursor: pointer;
+      color: var(--text3);
+      padding: 4px 8px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.12s;
+    }
+    .icon-btn:hover {
+      color: var(--text);
+      border-color: var(--border2);
+      background: var(--bg2);
+    }
+    .icon-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    .output-area {
+      flex: 1;
+      overflow: auto;
+      padding: 18px 20px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+    .output-area::-webkit-scrollbar { width: 6px; height: 6px; }
+    .output-area::-webkit-scrollbar-track { background: transparent; }
+    .output-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    #ascii-out {
+      font-family: var(--mono);
+      font-size: 6px;
+      line-height: 1.15;
+      color: var(--text);
+      white-space: pre;
+      letter-spacing: 0.04em;
+      display: block;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      padding: 60px 40px;
+      text-align: center;
+    }
+    .empty-state svg { color: var(--text3); }
+    .empty-state h2 {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text2);
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+    }
+    .empty-state p {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: var(--mono);
+      line-height: 1.8;
+      max-width: 320px;
+    }
+    .empty-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .empty-tip {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 10px;
+      color: var(--text3);
+      line-height: 1.6;
+      text-align: left;
+    }
+    .empty-tip strong { color: var(--text2); display: block; margin-bottom: 2px; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 7px 24px;
+      border-top: 0.5px solid var(--border);
+      background: var(--bg2);
+    }
+    .status-item {
+      font-size: 10px;
+      color: var(--text3);
+      font-family: var(--mono);
+    }
+    .status-item span { color: var(--text2); }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text3);
+      flex-shrink: 0;
+    }
+    .status-dot.ready { background: var(--teal-light); }
+    .status-right {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--text3);
+      font-family: var(--mono);
+    }
+
+    canvas#src-canvas { display: none; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg3);
+      border: 0.5px solid var(--teal);
+      color: var(--teal-light);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      opacity: 0;
+      transition: all 0.2s;
+      pointer-events: none;
+      letter-spacing: 0.06em;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Font size control for output */
+    .font-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .font-btn {
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      border-radius: 4px;
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 12px;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s;
+    }
+    .font-btn:hover { color: var(--text); border-color: var(--border2); }
+    .font-size-label { font-size: 10px; color: var(--text3); min-width: 24px; text-align: center; }
+
+    /* Resolution presets */
+    .preset-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 10px; }
+    .preset-btn {
+      padding: 5px 0;
+      font-size: 9px;
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+      text-align: center;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: transparent;
+      color: var(--text3);
+      transition: all 0.12s;
+      line-height: 1.4;
+    }
+    .preset-btn:hover { color: var(--text2); border-color: var(--border2); background: var(--bg3); }
+    .preset-btn.active { background: var(--teal-dim); color: var(--teal-light); border-color: var(--teal); }
+    .preset-btn span { display: block; font-size: 8px; color: var(--text3); margin-top: 1px; }
+    .preset-btn.active span { color: var(--teal); }
+
+    /* Shuffle button flash */
+    @keyframes shuffleFlash {
+      0%   { color: var(--amber); border-color: var(--amber); background: rgba(239,159,39,0.14); transform: rotate(-8deg); }
+      40%  { color: var(--teal-light); border-color: var(--teal); background: var(--teal-dim); transform: rotate(6deg); }
+      100% { color: var(--text3); border-color: transparent; background: transparent; transform: rotate(0deg); }
+    }
+    .icon-btn.shuffling {
+      animation: shuffleFlash 0.4s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <header>
+    <div class="traffic-lights">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+    </div>
+    <span class="app-title"><strong>ASCII</strong> / Generator</span>
+    <nav>
+      <a href="#" onclick="copyAscii(); return false;">copy</a>
+      <a href="#" onclick="downloadAscii(); return false;">download</a>
+      <a href="#" onclick="downloadPng(); return false;">export png</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+      <div class="sidebar-section">
+        <div class="section-label">Source</div>
+
+        <!-- Tab switcher -->
+        <div class="source-tabs">
+          <button class="src-tab active" id="tab-upload" onclick="setSourceTab('upload')">↑ upload</button>
+          <button class="src-tab" id="tab-generate" onclick="setSourceTab('generate')">✦ generate</button>
+        </div>
+
+        <!-- Upload panel -->
+        <div id="upload-panel">
+          <div id="drop-zone" class="drop-zone" onclick="document.getElementById('file-input').click()">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="m21 15-5-5L5 21"/>
+            </svg>
+            <p>click to upload<br>or drop image here</p>
+            <div class="fname" id="fname"></div>
+          </div>
+          <input type="file" id="file-input" accept="image/*">
+        </div>
+
+        <!-- Generate panel -->
+        <div class="prompt-panel" id="generate-panel">
+          <textarea
+            class="prompt-textarea"
+            id="prompt-input"
+            placeholder="describe your ascii art…&#10;&#10;e.g. a lighthouse on a rocky shore at night, a wolf howling at the moon, a city skyline at dusk"
+            rows="5"
+          ></textarea>
+
+          <div class="prompt-options">
+            <div class="prompt-opt-row">
+              <span class="prompt-opt-label">style</span>
+              <select class="prompt-select" id="gen-style">
+                <option value="detailed">detailed</option>
+                <option value="minimal">minimal</option>
+                <option value="abstract">abstract</option>
+                <option value="bold">bold / graphic</option>
+              </select>
+            </div>
+            <div class="prompt-opt-row">
+              <span class="prompt-opt-label">width</span>
+              <select class="prompt-select" id="gen-width">
+                <option value="60">60 cols</option>
+                <option value="80" selected>80 cols</option>
+                <option value="100">100 cols</option>
+                <option value="120">120 cols</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-generate" id="btn-generate" onclick="generateAscii()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            generate
+          </button>
+        </div>
+
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Scale</div>
+        <div class="ctrl-group">
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">columns</span>
+              <span class="ctrl-val" id="cols-val">80</span>
+            </div>
+            <input type="range" id="cols" min="4" max="400" step="1" value="80">
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">aspect correction</span>
+              <span class="ctrl-val" id="aspect-val">0.45</span>
+            </div>
+            <input type="range" id="aspect" min="0.20" max="1.00" step="0.01" value="0.45">
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-name" style="margin-bottom:2px">resolution presets</span>
+            <div class="preset-row">
+              <button class="preset-btn" onclick="applyPreset(8)"  title="Abstract — 8 cols">micro<span>8</span></button>
+              <button class="preset-btn" onclick="applyPreset(20)" title="Very low — 20 cols">low<span>20</span></button>
+              <button class="preset-btn" onclick="applyPreset(80)" title="Standard — 80 cols">mid<span>80</span></button>
+              <button class="preset-btn" onclick="applyPreset(160)" title="High — 160 cols">high<span>160</span></button>
+              <button class="preset-btn" onclick="applyPreset(320)" title="Ultra — 320 cols">ultra<span>320</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Image Processing</div>
+        <div class="ctrl-group">
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">brightness</span>
+              <span class="ctrl-val" id="bright-val">1.00</span>
+            </div>
+            <input type="range" id="bright" min="0.50" max="2.00" step="0.05" value="1.00">
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">contrast</span>
+              <span class="ctrl-val" id="contrast-val">1.00</span>
+            </div>
+            <input type="range" id="contrast" min="0.50" max="3.00" step="0.05" value="1.00">
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">gamma</span>
+              <span class="ctrl-val" id="gamma-val">1.00</span>
+            </div>
+            <input type="range" id="gamma" min="0.40" max="2.50" step="0.05" value="1.00">
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Composition</div>
+        <div class="ctrl-group">
+          <div class="ctrl-row">
+            <span class="ctrl-name" style="margin-bottom:5px">character set</span>
+            <select id="charset">
+              <option value="standard">standard — 70 chars</option>
+              <option value="blocks">blocks — ░▒▓█</option>
+              <option value="minimal">minimal — . : | # @</option>
+              <option value="dense">dense — full ASCII</option>
+              <option value="braille">braille — ⠁⠃⠇⡇⣇</option>
+              <option value="kanji">kanji-esque — geometric</option>
+            </select>
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-name" style="margin-bottom:5px">render mode</span>
+            <div class="toggle-row">
+              <button class="tog active" id="tog-dark"  onclick="setMode('dark')">dark</button>
+              <button class="tog"        id="tog-light" onclick="setMode('light')">light</button>
+              <button class="tog"        id="tog-color" onclick="setMode('color')">color</button>
+            </div>
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-name" style="margin-bottom:5px">crop / fit</span>
+            <select id="crop">
+              <option value="fit">letterbox (fit)</option>
+              <option value="fill">crop center</option>
+              <option value="top">crop top</option>
+              <option value="bottom">crop bottom</option>
+            </select>
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-name" style="margin-bottom:5px">dithering</span>
+            <div class="toggle-row">
+              <button class="tog active" id="tog-dith-none"  onclick="setDither('none')">off</button>
+              <button class="tog"        id="tog-dith-floyd" onclick="setDither('floyd')">floyd</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Color controls — only visible in color mode -->
+      <div class="color-panel sidebar-section" id="color-panel">
+        <div class="section-label" style="margin-bottom:12px">Color</div>
+        <div class="ctrl-group">
+
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">saturation</span>
+              <span class="ctrl-val" id="sat-val">1.00</span>
+            </div>
+            <input type="range" class="gradient-track" id="sat" min="0" max="3" step="0.05" value="1">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">hue rotate</span>
+              <span class="ctrl-val" id="hue-val">0°</span>
+            </div>
+            <input type="range" class="gradient-track" id="hue" min="0" max="360" step="1" value="0">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span class="ctrl-name">temperature</span>
+              <span class="ctrl-val" id="temp-val">0</span>
+            </div>
+            <input type="range" class="gradient-track" id="temp" min="-100" max="100" step="1" value="0">
+          </div>
+
+          <div class="ctrl-row">
+            <span class="ctrl-name" style="margin-bottom:6px">glow / bg fill</span>
+            <div class="glow-row">
+              <button class="glow-tog active" id="glow-none" onclick="setGlow('none')">off<span class="glow-label">flat</span></button>
+              <button class="glow-tog" id="glow-shadow" onclick="setGlow('shadow')">glow<span class="glow-label">bloom</span></button>
+              <button class="glow-tog" id="glow-bg" onclick="setGlow('bg')">fill<span class="glow-label">solid bg</span></button>
+              <button class="glow-tog" id="glow-both" onclick="setGlow('both')">both<span class="glow-label">max</span></button>
+            </div>
+          </div>
+
+          <div class="ctrl-row" id="glow-intensity-row" style="display:none">
+            <div class="ctrl-header">
+              <span class="ctrl-name">intensity</span>
+              <span class="ctrl-val" id="glow-int-val">0.50</span>
+            </div>
+            <input type="range" id="glow-int" min="0.05" max="1.0" step="0.05" value="0.5">
+          </div>
+
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Output -->
+    <div class="output-panel">
+      <div class="output-toolbar">
+        <span class="output-label">output</span>
+        <div class="font-row">
+          <button class="font-btn" onclick="changeFontSize(-1)" title="scale down">−</button>
+          <span class="font-size-label" id="font-size-label">auto</span>
+          <button class="font-btn" onclick="changeFontSize(1)" title="scale up">+</button>
+        </div>
+        <div style="width:1px;height:14px;background:var(--border);margin:0 8px"></div>
+        <div class="output-dims">
+          <span id="st-cols">—</span> × <span id="st-rows">—</span>
+          &nbsp;·&nbsp; <span id="st-chars">—</span> chars
+        </div>
+        <button class="icon-btn" id="shuffle-btn" onclick="shuffleCharset()" title="Shuffle character set">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+          shuffle
+        </button>
+        <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
+        <button class="icon-btn" onclick="copyAscii()" title="Copy to clipboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          copy
+        </button>
+        <button class="icon-btn" onclick="downloadAscii()" title="Download .txt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          .txt
+        </button>
+        <button class="icon-btn" onclick="downloadPng()" title="Export PNG">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          png
+        </button>
+      </div>
+
+      <div class="output-area" id="output-area">
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+          <h2>no output yet</h2>
+          <p>upload an image — output updates<br>live as you adjust any control</p>
+          <div class="empty-grid">
+            <div class="empty-tip"><strong>columns</strong> controls resolution — try 60–120 for portraits</div>
+            <div class="empty-tip"><strong>contrast</strong> boost to 1.5–2× sharpens detail significantly</div>
+            <div class="empty-tip"><strong>color mode</strong> wraps each char in its source pixel's RGB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <div class="status-item" id="status-text">ready</div>
+    <div class="status-item">mode <span id="st-mode">dark</span></div>
+    <div class="status-item">charset <span id="st-charset">standard</span></div>
+    <div class="status-item">dither <span id="st-dither">off</span></div>
+    <div class="status-right">ASCII / Generator — dollmarc</div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="src-canvas"></canvas>
+
+<script>
+const CHARSETS = {
+  standard: ' .\'`^",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$',
+  blocks:   ' ░▒▓█',
+  minimal:  ' .:-=+*#%@',
+  dense:    ' !"#$%&\'()*+,-./:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
+  braille:  ' ⠁⠃⠇⡇⣇⣧⣷⣿',
+  kanji:    ' ·∙•○◎●□■◆◇▲△▼▽◐◑★☆'
+};
+
+let currentImage = null;
+let currentMode = 'dark';
+let currentDither = 'none';
+let currentAscii = '';
+let outputFontSize = 6;
+let fontSizeScale = 1.0;
+
+// Shuffled charset — null means use original ordering
+let shuffledCharset = null;
+
+function shuffleCharset() {
+  if (!currentImage) { showToast('load an image first'); return; }
+
+  const charsetKey = document.getElementById('charset').value;
+  const base = CHARSETS[charsetKey];
+
+  // Fisher-Yates on the middle chars only — keep first (darkest) and last (lightest) anchored
+  // so luminance extremes still map to approximately correct ends
+  const arr = base.split('');
+  const lo = 1, hi = arr.length - 2;
+  for (let i = hi; i > lo; i--) {
+    const j = lo + Math.floor(Math.random() * (i - lo + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  shuffledCharset = arr.join('');
+
+  const btn = document.getElementById('shuffle-btn');
+  btn.classList.remove('shuffling');
+  void btn.offsetWidth; // force reflow to restart animation
+  btn.classList.add('shuffling');
+  btn.addEventListener('animationend', () => btn.classList.remove('shuffling'), { once: true });
+
+  render();
+}
+
+// Color controls state
+let colorSat  = 1.0;
+let colorHue  = 0;
+let colorTemp = 0;
+let colorGlow = 'none';
+let colorGlowInt = 0.5; // multiplier applied on top of auto-calculated size
+
+// Monospace char width is ~0.6× font size; line-height is 1.15
+const CHAR_ASPECT = 0.6;
+
+function calcAutoFontSize(cols) {
+  const area = document.getElementById('output-area');
+  if (!area || !cols) return 6;
+  const availW = area.clientWidth - 40; // subtract padding (20px each side)
+  const fs = availW / (cols * CHAR_ASPECT);
+  return Math.max(1, Math.round(fs * fontSizeScale * 10) / 10);
+}
+
+// ── Color utilities ──────────────────────────────────────────────────────────
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h = 0, s = 0, l = (max+min)/2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+      case g: h = ((b-r)/d + 2)/6; break;
+      case b: h = ((r-g)/d + 4)/6; break;
+    }
+  }
+  return [h*360, s, l];
+}
+
+function hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360 / 360;
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p,q,t) => {
+      if (t<0) t+=1; if (t>1) t-=1;
+      if (t<1/6) return p+(q-p)*6*t;
+      if (t<1/2) return q;
+      if (t<2/3) return p+(q-p)*(2/3-t)*6;
+      return p;
+    };
+    const q = l < 0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r = hue2rgb(p,q,h+1/3);
+    g = hue2rgb(p,q,h);
+    b = hue2rgb(p,q,h-1/3);
+  }
+  return [Math.round(r*255), Math.round(g*255), Math.round(b*255)];
+}
+
+function applyColorGrade(r, g, b) {
+  let [h, s, l] = rgbToHsl(r, g, b);
+  s = Math.min(1, s * colorSat);
+  h = (h + colorHue) % 360;
+  [r, g, b] = hslToRgb(h, s, l);
+  if (colorTemp !== 0) {
+    const t = colorTemp / 100;
+    if (t > 0) { r = Math.min(255, r + t*40); b = Math.max(0, b - t*30); }
+    else        { b = Math.min(255, b + (-t)*40); r = Math.max(0, r - (-t)*30); }
+  }
+  return [Math.round(r), Math.round(g), Math.round(b)];
+}
+
+function updateGradientTracks() {
+  document.getElementById('sat').style.background =
+    `linear-gradient(to right, hsl(200,0%,40%), hsl(200,50%,45%), hsl(200,100%,50%), hsl(30,100%,55%))`;
+  document.getElementById('hue').style.background =
+    `linear-gradient(to right, hsl(0,75%,55%), hsl(60,75%,55%), hsl(120,75%,55%), hsl(180,75%,55%), hsl(240,75%,55%), hsl(300,75%,55%), hsl(360,75%,55%))`;
+  document.getElementById('temp').style.background =
+    `linear-gradient(to right, #2255bb, #5580cc, #888, #cc8833, #dd6611)`;
+}
+
+function setGlow(mode) {
+  colorGlow = mode;
+  ['none','shadow','bg','both'].forEach(x =>
+    document.getElementById('glow-'+x).classList.toggle('active', x === mode)
+  );
+  document.getElementById('glow-intensity-row').style.display = mode !== 'none' ? '' : 'none';
+  scheduleRender(0);
+}
+
+function setMode(m) {
+  currentMode = m;
+  ['dark','light','color'].forEach(x =>
+    document.getElementById('tog-'+x).classList.toggle('active', x === m)
+  );
+  document.getElementById('st-mode').textContent = m;
+  document.getElementById('color-panel').classList.toggle('visible', m === 'color');
+  if (m === 'color') updateGradientTracks();
+  scheduleRender(0);
+}
+
+function setDither(d) {
+  currentDither = d;
+  ['none','floyd'].forEach(x =>
+    document.getElementById('tog-dith-'+x).classList.toggle('active', x === d)
+  );
+  document.getElementById('st-dither').textContent = d === 'none' ? 'off' : d;
+  scheduleRender(0);
+}
+
+function changeFontSize(delta) {
+  // Adjust scale by 10% per step; clamp between 0.25× and 3×
+  fontSizeScale = Math.max(0.25, Math.min(3.0, fontSizeScale + delta * 0.1));
+  const cols = Math.round(parseFloat(document.getElementById('cols').value));
+  outputFontSize = calcAutoFontSize(cols);
+  const el = document.getElementById('ascii-out');
+  if (el) el.style.fontSize = outputFontSize + 'px';
+  document.getElementById('font-size-label').textContent = outputFontSize + 'px';
+}
+
+// Drag and drop
+const dropZone = document.getElementById('drop-zone');
+['dragover','dragenter'].forEach(evt => dropZone.addEventListener(evt, e => {
+  e.preventDefault(); dropZone.style.borderColor = 'var(--teal-light)';
+}));
+['dragleave','dragend'].forEach(evt => dropZone.addEventListener(evt, () => {
+  dropZone.style.borderColor = '';
+}));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.style.borderColor = '';
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+});
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+function loadFile(f) {
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+    currentImage = img;
+    dropZone.classList.add('has-image');
+    const n = f.name.length > 24 ? f.name.slice(0, 21) + '…' : f.name;
+    document.getElementById('fname').textContent = n;
+    render();
+  };
+  img.src = url;
+}
+
+const PRESETS = [8, 20, 80, 160, 320];
+function applyPreset(cols) {
+  const slider = document.getElementById('cols');
+  slider.value = cols;
+  document.getElementById('cols-val').textContent = cols;
+  highlightPreset(cols);
+  scheduleRender(cols <= 20 ? 0 : 80);
+}
+
+function highlightPreset(cols) {
+  document.querySelectorAll('.preset-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', PRESETS[i] === cols);
+  });
+}
+
+// Debounced render — fast for image-processing sliders, slower for cols (resamples canvas)
+let renderTimer = null;
+function scheduleRender(delay) {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(render, delay ?? 60);
+}
+
+// Slider live labels + auto-render
+[
+  ['cols',     'cols-val',     v => Math.round(v),              120],
+  ['aspect',   'aspect-val',   v => parseFloat(v).toFixed(2),   120],
+  ['bright',   'bright-val',   v => parseFloat(v).toFixed(2),   40],
+  ['contrast', 'contrast-val', v => parseFloat(v).toFixed(2),   40],
+  ['gamma',    'gamma-val',    v => parseFloat(v).toFixed(2),   40],
+].forEach(([id, outId, fmt, delay]) => {
+  document.getElementById(id).addEventListener('input', function() {
+    document.getElementById(outId).textContent = fmt(this.value);
+    if (id === 'cols') highlightPreset(parseInt(this.value));
+    scheduleRender(delay);
+  });
+});
+
+// Color control sliders
+document.getElementById('sat').addEventListener('input', function() {
+  colorSat = parseFloat(this.value);
+  document.getElementById('sat-val').textContent = colorSat.toFixed(2);
+  scheduleRender(40);
+});
+document.getElementById('hue').addEventListener('input', function() {
+  colorHue = parseInt(this.value);
+  document.getElementById('hue-val').textContent = colorHue + '°';
+  scheduleRender(30);
+});
+document.getElementById('temp').addEventListener('input', function() {
+  colorTemp = parseInt(this.value);
+  const sign = colorTemp > 0 ? '+' : '';
+  document.getElementById('temp-val').textContent = sign + colorTemp;
+  scheduleRender(30);
+});
+document.getElementById('glow-int').addEventListener('input', function() {
+  colorGlowInt = parseFloat(this.value);
+  document.getElementById('glow-int-val').textContent = colorGlowInt.toFixed(2);
+  scheduleRender(30);
+});
+
+// Charset label + auto-render
+document.getElementById('charset').addEventListener('change', function() {
+  shuffledCharset = null; // reset any active shuffle when charset changes
+  const labels = { standard:'standard', blocks:'blocks', minimal:'minimal', dense:'dense', braille:'braille', kanji:'kanji' };
+  document.getElementById('st-charset').textContent = labels[this.value] || this.value;
+  scheduleRender(0);
+});
+
+// Crop select auto-render
+document.getElementById('crop').addEventListener('change', () => scheduleRender(0));
+
+function setStatus(msg, ready) {
+  document.getElementById('status-text').textContent = msg;
+  document.getElementById('status-dot').className = 'status-dot' + (ready ? ' ready' : '');
+}
+
+function applyGamma(lum, gamma) {
+  return Math.pow(lum / 255, gamma) * 255;
+}
+
+function floydSteinberg(data, width, height) {
+  const out = new Float32Array(data);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x;
+      const old = out[i];
+      const newv = Math.round(old / 255) * 255;
+      const err = old - newv;
+      out[i] = newv;
+      if (x + 1 < width)          out[i + 1]         += err * 7/16;
+      if (y + 1 < height) {
+        if (x > 0)                 out[i + width - 1] += err * 3/16;
+                                   out[i + width]     += err * 5/16;
+        if (x + 1 < width)         out[i + width + 1] += err * 1/16;
+      }
+    }
+  }
+  return out;
+}
+
+function render() {
+  if (!currentImage) return;
+
+  const btn = document.querySelector('.btn-render');
+  btn.classList.add('rendering');
+  btn.textContent = '⟳ rendering…';
+  setStatus('rendering…', false);
+
+  requestAnimationFrame(() => {
+    const cols     = Math.round(parseFloat(document.getElementById('cols').value));
+    const aspect   = parseFloat(document.getElementById('aspect').value);
+    const brightness = parseFloat(document.getElementById('bright').value);
+    const contrast   = parseFloat(document.getElementById('contrast').value);
+    const gamma      = parseFloat(document.getElementById('gamma').value);
+    const charsetKey = document.getElementById('charset').value;
+    const charset    = shuffledCharset || CHARSETS[charsetKey];
+    const crop       = document.getElementById('crop').value;
+    const mode       = currentMode;
+    const dither     = currentDither;
+
+    // Auto-scale font size so the art fills the output area width
+    outputFontSize = calcAutoFontSize(cols);
+    document.getElementById('font-size-label').textContent = outputFontSize + 'px';
+
+    const rows = Math.round(cols * aspect * (currentImage.naturalHeight / currentImage.naturalWidth));
+    const canvas = document.getElementById('src-canvas');
+    canvas.width = cols;
+    canvas.height = rows;
+    const ctx = canvas.getContext('2d');
+
+    ctx.filter = `brightness(${brightness}) contrast(${contrast})`;
+
+    let sx = 0, sy = 0, sw = currentImage.naturalWidth, sh = currentImage.naturalHeight;
+    const srcAR = currentImage.naturalWidth / currentImage.naturalHeight;
+    const dstAR = cols / rows;
+
+    if (crop !== 'fit') {
+      if (srcAR > dstAR) {
+        sw = Math.round(currentImage.naturalHeight * dstAR);
+        sx = Math.round((currentImage.naturalWidth - sw) / 2);
+      } else {
+        sh = Math.round(currentImage.naturalWidth / dstAR);
+        if (crop === 'top')         sy = 0;
+        else if (crop === 'bottom') sy = currentImage.naturalHeight - sh;
+        else                        sy = Math.round((currentImage.naturalHeight - sh) / 2);
+      }
+    }
+    ctx.drawImage(currentImage, sx, sy, sw, sh, 0, 0, cols, rows);
+
+    const imgData = ctx.getImageData(0, 0, cols, rows).data;
+
+    // Build luminance array with gamma
+    const lums = new Float32Array(cols * rows);
+    const rData = new Uint8ClampedArray(cols * rows * 3);
+    for (let p = 0; p < cols * rows; p++) {
+      const r = imgData[p*4], g = imgData[p*4+1], b = imgData[p*4+2];
+      rData[p*3] = r; rData[p*3+1] = g; rData[p*3+2] = b;
+      let lum = 0.299*r + 0.587*g + 0.114*b;
+      lum = applyGamma(lum, gamma);
+      lums[p] = lum;
+    }
+
+    let finalLums = lums;
+    if (dither === 'floyd') {
+      finalLums = floydSteinberg(lums, cols, rows);
+    }
+
+    const outputArea = document.getElementById('output-area');
+
+    if (mode === 'color') {
+      currentAscii = '';
+      const htmlLines = [];
+      const glowMode = colorGlow;
+      const glowInt  = colorGlowInt;
+
+      for (let y = 0; y < rows; y++) {
+        let line = '';
+        for (let x = 0; x < cols; x++) {
+          const p = y * cols + x;
+          let lum = Math.max(0, Math.min(255, finalLums[p]));
+          const ci = Math.floor((lum / 255) * (charset.length - 1));
+          const ch = charset[ci];
+
+          // Apply color grading
+          let [r, g, b] = applyColorGrade(rData[p*3], rData[p*3+1], rData[p*3+2]);
+
+          const esc = ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch === '&' ? '&amp;' : ch === ' ' ? '&nbsp;' : ch;
+
+          let spanStyle = `color:rgb(${r},${g},${b})`;
+
+          if (glowMode === 'shadow' || glowMode === 'both') {
+            const spread = Math.round(outputFontSize * 0.6 * glowInt);
+            spanStyle += `;text-shadow:0 0 ${spread}px rgba(${r},${g},${b},${(glowInt*0.9).toFixed(2)}), 0 0 ${spread*2}px rgba(${r},${g},${b},${(glowInt*0.4).toFixed(2)})`;
+          }
+          if (glowMode === 'bg' || glowMode === 'both') {
+            const a = (glowInt * 0.55).toFixed(2);
+            spanStyle += `;background:rgba(${r},${g},${b},${a})`;
+          }
+
+          line += `<span style="${spanStyle}">${esc}</span>`;
+          currentAscii += ch;
+        }
+        htmlLines.push(line);
+        currentAscii += '\n';
+      }
+      outputArea.innerHTML = `<pre id="ascii-out" style="font-size:${outputFontSize}px;line-height:1.15;white-space:pre;letter-spacing:0.04em;">${htmlLines.join('\n')}</pre>`;
+    } else {
+      const lines = [];
+      for (let y = 0; y < rows; y++) {
+        let line = '';
+        for (let x = 0; x < cols; x++) {
+          const p = y * cols + x;
+          let lum = Math.max(0, Math.min(255, finalLums[p]));
+          if (mode === 'light') lum = 255 - lum;
+          const ci = Math.floor((lum / 255) * (charset.length - 1));
+          line += charset[ci];
+        }
+        lines.push(line);
+      }
+      currentAscii = lines.join('\n');
+      outputArea.innerHTML = `<pre id="ascii-out" style="font-size:${outputFontSize}px;line-height:1.15;white-space:pre;letter-spacing:0.04em;">${escHtml(currentAscii)}</pre>`;
+    }
+
+    document.getElementById('st-cols').textContent = cols;
+    document.getElementById('st-rows').textContent = rows;
+    document.getElementById('st-chars').textContent = (cols * rows).toLocaleString();
+
+    btn.classList.remove('rendering');
+    btn.textContent = '▶ render';
+    setStatus('render complete — ' + cols + '×' + rows, true);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function copyAscii() {
+  if (!currentAscii) { showToast('nothing to copy yet'); return; }
+  navigator.clipboard.writeText(currentAscii)
+    .then(() => showToast('copied to clipboard'))
+    .catch(() => showToast('copy failed'));
+}
+
+function downloadAscii() {
+  if (!currentAscii) { showToast('nothing to download yet'); return; }
+  const blob = new Blob([currentAscii], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ascii-art.txt';
+  a.click();
+  showToast('downloading ascii-art.txt');
+}
+
+function downloadPng() {
+  const pre = document.getElementById('ascii-out');
+  if (!pre) { showToast('render first'); return; }
+
+  const lines = currentAscii.split('\n');
+  const cols = lines[0] ? lines[0].length : 0;
+  const rows = lines.length;
+  if (!cols || !rows) { showToast('nothing to export'); return; }
+
+  const charW = outputFontSize * 0.6;
+  const charH = outputFontSize * 1.15;
+  const pad = 20;
+  const cvs = document.createElement('canvas');
+  cvs.width  = Math.round(cols * charW) + pad * 2;
+  cvs.height = Math.round(rows * charH) + pad * 2;
+  const cx = cvs.getContext('2d');
+
+  const isDark = currentMode !== 'light';
+  cx.fillStyle = isDark ? '#0d1117' : '#ffffff';
+  cx.fillRect(0, 0, cvs.width, cvs.height);
+
+  cx.font = `${outputFontSize}px 'DM Mono', monospace`;
+  cx.textBaseline = 'top';
+
+  if (currentMode === 'color') {
+    const rawLines = currentAscii.split('\n');
+    const canvas2 = document.getElementById('src-canvas');
+    const imgData2 = canvas2.getContext('2d').getImageData(0, 0, canvas2.width, canvas2.height).data;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const p = y * cols + x;
+        const r = imgData2[p*4], g = imgData2[p*4+1], b = imgData2[p*4+2];
+        cx.fillStyle = `rgb(${r},${g},${b})`;
+        cx.fillText(rawLines[y][x] || ' ', pad + x * charW, pad + y * charH);
+      }
+    }
+  } else {
+    cx.fillStyle = isDark ? '#e6edf3' : '#0d1117';
+    for (let y = 0; y < rows; y++) {
+      cx.fillText(lines[y], pad, pad + y * charH);
+    }
+  }
+
+  cvs.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ascii-art.png';
+    a.click();
+    showToast('exporting png…');
+  });
+}
+
+// ── Source tab switching ─────────────────────────────────────────────────────
+
+function setSourceTab(tab) {
+  document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+  document.getElementById('tab-generate').classList.toggle('active', tab === 'generate');
+  document.getElementById('upload-panel').style.display = tab === 'upload' ? '' : 'none';
+  document.getElementById('generate-panel').classList.toggle('visible', tab === 'generate');
+}
+
+// ── AI ASCII generation ──────────────────────────────────────────────────────
+
+async function generateAscii() {
+  const prompt = document.getElementById('prompt-input').value.trim();
+  if (!prompt) { showToast('enter a description first'); return; }
+
+  const style   = document.getElementById('gen-style').value;
+  const width   = parseInt(document.getElementById('gen-width').value);
+  const btn     = document.getElementById('btn-generate');
+  const outputArea = document.getElementById('output-area');
+
+  btn.disabled = true;
+  btn.classList.add('generating');
+  btn.querySelector('span, svg') // just update text
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> generating…`;
+  setStatus('generating…', false);
+
+  // Approximate aspect — monospace chars are ~2× taller than wide
+  const approxRows = Math.round(width * 0.45);
+
+  const styleGuide = {
+    detailed: 'Use a rich variety of characters to create fine tonal gradation and detailed textures. Include subtle shading.',
+    minimal:  'Use very few character types — mostly spaces and 3–4 mark characters. Lean into negative space.',
+    abstract: 'Prioritize interesting pattern and rhythm over literal representation. Be expressive and unexpected.',
+    bold:     'Use high contrast — mostly empty space vs. dense fill characters like # @ █. Strong graphic shapes.',
+  }[style];
+
+  const systemPrompt = `You are an ASCII art generator. The user will describe a subject and you output ONLY the ASCII art — no commentary, no markdown fences, no explanation before or after.
+
+Rules:
+- Output must be exactly ${width} characters wide on every line (pad with spaces if needed)
+- Target approximately ${approxRows} lines tall (aspect ratio ~0.45 of width)
+- Use only printable ASCII characters (space through ~)
+- No code fences, no backticks, no preamble, no trailing explanation
+- ${styleGuide}
+- Compose the art to fill the canvas — don't leave large empty regions at top or bottom
+- Sign nothing`;
+
+  // Show a live streaming pre while waiting
+  const autoFs = calcAutoFontSize(width);
+  outputArea.innerHTML = `<pre id="ascii-out" style="font-size:${autoFs}px;line-height:1.15;white-space:pre;letter-spacing:0.04em;color:var(--text)"><span class="stream-cursor"></span></pre>`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        stream: true,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `Create ASCII art of: ${prompt}` }],
+      }),
+    });
+
+    if (!response.ok) throw new Error(`API error ${response.status}`);
+
+    const pre = document.getElementById('ascii-out');
+    let accumulated = '';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            accumulated += evt.delta.text;
+            // Live update — escape html, append blinking cursor
+            pre.innerHTML = escHtml(accumulated) + '<span class="stream-cursor"></span>';
+            // Auto-scroll to bottom while streaming
+            const area = document.getElementById('output-area');
+            area.scrollTop = area.scrollHeight;
+          }
+        } catch {}
+      }
+    }
+
+    // Final — remove cursor, store as currentAscii, update stats
+    currentAscii = accumulated;
+    currentImage = null; // generated, not from image
+    pre.innerHTML = escHtml(accumulated);
+
+    const lines = accumulated.split('\n');
+    const genCols = Math.max(...lines.map(l => l.length));
+    const genRows = lines.length;
+    document.getElementById('st-cols').textContent = genCols;
+    document.getElementById('st-rows').textContent = genRows;
+    document.getElementById('st-chars').textContent = (genCols * genRows).toLocaleString();
+    setStatus(`generated — ${genCols}×${genRows}`, true);
+
+  } catch (err) {
+    outputArea.innerHTML = `<div class="empty-state"><p style="color:var(--red)">generation failed: ${escHtml(err.message)}</p></div>`;
+    setStatus('error', false);
+  }
+
+  btn.disabled = false;
+  btn.classList.remove('generating');
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> generate`;
+}
+
+// Cmd/Ctrl+Enter to generate
+document.getElementById('prompt-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    generateAscii();
+  }
+});
+
+// ── Re-scale when output panel is resized ────────────────────────────────────
+const resizeObserver = new ResizeObserver(() => {
+  if (currentImage) scheduleRender(120);
+});
+resizeObserver.observe(document.getElementById('output-area'));
+
+// Render button — kept as manual fallback, styled subtly
+const renderBtn = document.createElement('button');
+renderBtn.className = 'btn-render';
+renderBtn.textContent = '↺ re-render';
+renderBtn.style.cssText = 'opacity:0.4;font-size:10px;padding:7px;letter-spacing:0.12em;';
+renderBtn.onclick = render;
+renderBtn.title = 'Force re-render';
+document.querySelector('.sidebar').appendChild(renderBtn);
+</script>
+</body>
+</html>
