@@ -533,6 +533,54 @@
     .preset-btn span { display: block; font-size: 8px; color: var(--text3); margin-top: 1px; }
     .preset-btn.active span { color: var(--teal); }
 
+    /* Word charset section */
+    .word-charset-area {
+      width: 100%;
+      background: var(--bg3);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 8px 10px;
+      resize: vertical;
+      min-height: 72px;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color 0.15s;
+    }
+    .word-charset-area:focus { border-color: var(--teal-light); }
+    .word-charset-area::placeholder { color: var(--text3); font-style: italic; }
+
+    .word-mode-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .word-mode-badge {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text3);
+      flex: 1;
+    }
+    .word-count-badge {
+      font-size: 9px;
+      color: var(--teal);
+      letter-spacing: 0.06em;
+    }
+
+    .word-threshold-row {
+      margin-top: 10px;
+    }
+
+    /* Word charset active state — highlight charset select */
+    select.word-active {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
     /* Shuffle button flash */
     @keyframes shuffleFlash {
       0%   { color: var(--amber); border-color: var(--amber); background: rgba(239,159,39,0.14); transform: rotate(-8deg); }
@@ -836,6 +884,35 @@
         </div>
       </div>
 
+      <!-- Word Charset section -->
+      <div class="sidebar-section" id="word-charset-section">
+        <div class="section-label">Word Charset</div>
+        <textarea
+          class="word-charset-area"
+          id="word-charset-input"
+          placeholder="surf, waves, ocean, VW, bus, beach, quiver, leash, wax…"
+          spellcheck="false"
+        ></textarea>
+        <div class="word-mode-row">
+          <span class="word-mode-badge">draw order</span>
+          <span class="word-count-badge" id="word-char-count">0 chars</span>
+        </div>
+        <div class="toggle-row" style="margin-bottom:10px">
+          <button class="tog active" id="tog-word-seq"    onclick="setWordOrder('seq')">in order</button>
+          <button class="tog"        id="tog-word-random" onclick="setWordOrder('random')">random</button>
+        </div>
+        <div class="ctrl-row word-threshold-row">
+          <div class="ctrl-header">
+            <span class="ctrl-name">darkness threshold</span>
+            <span class="ctrl-val" id="wthresh-val">40%</span>
+          </div>
+          <input type="range" id="word-threshold" min="0" max="100" step="1" value="40">
+        </div>
+        <div style="margin-top:2px;font-size:10px;color:var(--text3);line-height:1.7">
+          dark pixels → spaces · bright pixels → words
+        </div>
+      </div>
+
       <!-- Color controls — only visible in color mode -->
       <div class="color-panel sidebar-section" id="color-panel">
         <div class="section-label" style="margin-bottom:12px">Color</div>
@@ -972,6 +1049,63 @@ let fontSizeScale = 1.0;
 
 // Shuffled charset — null means use original ordering
 let shuffledCharset = null;
+
+// ── Word stream charset ───────────────────────────────────────────────────────
+
+function buildWordStream() {
+  const raw = document.getElementById('word-charset-input').value.trim();
+  if (!raw) return '';
+  const words = raw.split(/[\n,]+/).map(w => w.trim()).filter(Boolean);
+  if (words.length === 0) return '';
+  return (words.join(' ') + ' ');
+}
+
+function buildWordStreamOrdered(shuffle) {
+  const raw = document.getElementById('word-charset-input').value.trim();
+  if (!raw) return '';
+  const words = raw.split(/[\n,]+/).map(w => w.trim()).filter(Boolean);
+  if (words.length === 0) return '';
+  if (shuffle) {
+    // Fisher-Yates on a copy of the word list
+    const arr = [...words];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return (arr.join(' ') + ' ');
+  }
+  return (words.join(' ') + ' ');
+}
+
+function updateWordCharCount() {
+  const stream = buildWordStreamOrdered(false);
+  const badge = document.getElementById('word-char-count');
+  if (stream.length === 0) {
+    badge.textContent = '0 chars';
+    badge.style.color = 'var(--text3)';
+  } else {
+    badge.textContent = stream.length + ' chars / cycle';
+    badge.style.color = 'var(--teal)';
+  }
+  scheduleRender(200);
+}
+
+let wordOrder = 'seq'; // 'seq' | 'random'
+
+function setWordOrder(mode) {
+  wordOrder = mode;
+  ['seq','random'].forEach(x =>
+    document.getElementById('tog-word-'+x).classList.toggle('active', x === mode)
+  );
+  if (buildWordStream().length > 0) scheduleRender(0);
+}
+
+// Wire up word charset textarea and threshold slider
+document.getElementById('word-charset-input').addEventListener('input', updateWordCharCount);
+document.getElementById('word-threshold').addEventListener('input', function() {
+  document.getElementById('wthresh-val').textContent = this.value + '%';
+  if (buildWordStream().length > 0) scheduleRender(80);
+});
 
 function shuffleCharset() {
   if (!currentImage) { showToast('load an image first'); return; }
@@ -1257,7 +1391,14 @@ function render() {
     const contrast   = parseFloat(document.getElementById('contrast').value);
     const gamma      = parseFloat(document.getElementById('gamma').value);
     const charsetKey = document.getElementById('charset').value;
-    const charset    = shuffledCharset || CHARSETS[charsetKey];
+
+    // Word stream mode: check if word charset is active
+    const wordStream = buildWordStreamOrdered(wordOrder === 'random');
+    const wordMode = wordStream.length > 0;
+    const wordThreshold = parseInt(document.getElementById('word-threshold').value) / 100;
+    const wordRandom = wordOrder === 'random';
+
+    const charset    = (!wordMode && shuffledCharset) ? shuffledCharset : CHARSETS[charsetKey];
     const crop       = document.getElementById('crop').value;
     const dither     = currentDither;
 
@@ -1317,13 +1458,28 @@ function render() {
     const glowMode = colorGlow;
     const glowInt  = colorGlowInt;
 
+    // Word stream cursor — advances only on non-space (visible) pixels
+    let wordCursor = 0;
+
     for (let y = 0; y < rows; y++) {
       let line = '';
       for (let x = 0; x < cols; x++) {
         const p = y * cols + x;
         let lum = Math.max(0, Math.min(255, finalLums[p]));
-        const ci = Math.floor((lum / 255) * (charset.length - 1));
-        const ch = charset[ci];
+
+        let ch;
+        if (wordMode) {
+          const normalizedLum = lum / 255;
+          if (normalizedLum < wordThreshold) {
+            ch = ' ';
+          } else {
+            ch = wordStream[wordCursor % wordStream.length];
+            wordCursor++;
+          }
+        } else {
+          const ci = Math.floor((lum / 255) * (charset.length - 1));
+          ch = charset[ci];
+        }
 
         let [r, g, b] = applyColorGrade(rData[p*3], rData[p*3+1], rData[p*3+2]);
         const esc = ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch === '&' ? '&amp;' : ch === ' ' ? '&nbsp;' : ch;
@@ -1347,6 +1503,7 @@ function render() {
     document.getElementById('st-cols').textContent = cols;
     document.getElementById('st-rows').textContent = rows;
     document.getElementById('st-chars').textContent = (cols * rows).toLocaleString();
+    document.getElementById('st-charset').textContent = wordMode ? 'word stream' : charsetKey;
 
     btn.classList.remove('rendering');
     btn.textContent = '▶ render';
