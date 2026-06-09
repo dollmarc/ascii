@@ -886,6 +886,7 @@
       }
       header { padding: 0 14px; }
       .canvas-toggle { display: none; }
+      .canvas-toggle-mobile { display: flex; }
       header nav { gap: 2px; }
       .hd-action { padding: 5px 8px; font-size: 0; gap: 0; }
       .hd-action svg { width: 16px; height: 16px; }
@@ -1019,6 +1020,10 @@
           <div class="drawer-pip"></div>
           <div class="drawer-label">
             <span class="drawer-label-text">controls</span>
+            <div class="canvas-toggle canvas-toggle-mobile" onclick="event.stopPropagation()">
+              <button class="canvas-tog dark-tog active" id="tog-canvas-dark-mob"  onclick="setCanvasBg('dark')">dark</button>
+              <button class="canvas-tog"                 id="tog-canvas-light-mob" onclick="setCanvasBg('light')">light</button>
+            </div>
             <span class="drawer-chevron" id="drawer-chevron">⌃</span>
           </div>
         </div>
@@ -1304,6 +1309,8 @@ function setCanvasBg(mode) {
 
   document.getElementById('tog-canvas-dark').classList.toggle('active', mode === 'dark');
   document.getElementById('tog-canvas-light').classList.toggle('active', mode === 'light');
+  document.getElementById('tog-canvas-dark-mob').classList.toggle('active', mode === 'dark');
+  document.getElementById('tog-canvas-light-mob').classList.toggle('active', mode === 'light');
   document.getElementById('st-canvas').textContent = mode;
 
   // Adjust empty-state text color for readability
