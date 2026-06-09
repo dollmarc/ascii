@@ -89,7 +89,8 @@
       z-index: 1;
       display: grid;
       grid-template-rows: 52px 1fr 36px;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
     }
 
     /* ─── HEADER ─────────────────────────────────────────────────────────── */
@@ -199,6 +200,7 @@
       display: grid;
       grid-template-columns: 252px 1fr;
       overflow: hidden;
+      height: 100%;
     }
 
     /* ─── SIDEBAR ────────────────────────────────────────────────────────── */
@@ -209,10 +211,20 @@
       border-right: 1px solid var(--hairline);
       background: rgba(255,255,255,0.65);
       backdrop-filter: blur(10px);
+      height: 100%;
       overflow-y: auto;
-      scrollbar-width: none;
+      scrollbar-width: thin;
+      scrollbar-color: var(--hairline-med) transparent;
     }
-    .sidebar::-webkit-scrollbar { display: none; }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--hairline-med);
+      border-radius: 4px;
+    }
+    .sidebar::-webkit-scrollbar-thumb:hover {
+      background: var(--stone-soft);
+    }
 
     .sidebar-section {
       padding: 16px 18px;
@@ -834,6 +846,19 @@
     }
     .icon-btn.shuffling { animation: shuffleFlash 0.4s ease-out forwards; }
 
+    /* ─── COLOR RESET ───────────────────────────────────────────────────── */
+    #color-reset-btn:hover {
+      color: var(--stone);
+      border-color: var(--hairline-med);
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+    }
+    #color-reset-btn:active { transform: scale(0.95); }
+    #color-reset-btn.flashed {
+      color: var(--teal);
+      border-color: var(--teal-border);
+    }
+
     /* ─── MOBILE DRAWER ──────────────────────────────────────────────────── */
     .drawer-handle {
       display: none;
@@ -1130,7 +1155,10 @@
 
       <!-- Color -->
       <div class="color-panel sidebar-section" id="color-panel">
-        <div class="section-label" style="margin-bottom:12px">Color</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="section-label" style="margin-bottom:0">Color</div>
+          <button id="color-reset-btn" onclick="resetColor()" title="Reset color to defaults" style="font-family:var(--sans);font-size:10px;font-weight:400;color:var(--stone-soft);background:transparent;border:1px solid transparent;border-radius:var(--r-pill);padding:2px 8px;cursor:pointer;letter-spacing:0.04em;transition:all 0.14s;line-height:1.6">reset</button>
+        </div>
         <div class="ctrl-group">
 
           <div class="ctrl-row">
@@ -1864,6 +1892,25 @@ function downloadPng() {
     a.click();
     showToast('exporting png…');
   });
+}
+
+// ── Color reset ───────────────────────────────────────────────────────────────
+function resetColor() {
+  // Default values matching the HTML input defaults
+  const defaults = { sat: 1, hue: 0, temp: 0, 'glow-int': 0.5 };
+  for (const [id, val] of Object.entries(defaults)) {
+    const el = document.getElementById(id);
+    if (el) { el.value = val; el.dispatchEvent(new Event('input')); }
+  }
+  // Reset glow to 'none'
+  setGlow('none');
+  // Update gradient tracks
+  updateGradientTracks();
+  // Flash the button as feedback
+  const btn = document.getElementById('color-reset-btn');
+  btn.classList.add('flashed');
+  setTimeout(() => btn.classList.remove('flashed'), 600);
+  showToast('color settings reset');
 }
 
 // ── Mobile drawer ─────────────────────────────────────────────────────────────
